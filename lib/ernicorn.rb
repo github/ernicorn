@@ -24,8 +24,6 @@ module Ernicorn
     def worker_loop(worker)
       Stats.incr_workers_idle
 
-      super
-
       if worker.nr == (self.worker_processes - 1)
         old_pid = "#{self.pid}.oldbin"
         if File.exists?(old_pid) && self.pid != old_pid
@@ -36,6 +34,8 @@ module Ernicorn
           end
         end
       end
+
+      super
     ensure
       Stats.decr_workers_idle
     end
@@ -46,6 +46,10 @@ module Ernicorn
 
       @client = client
       iruby, oruby = Ernie.process(self, self)
+    rescue EOFError
+      # bad client or tcp health check. ignore.
+    rescue => e
+      logger.error(e)
     ensure
       @client.close
       @client = nil
@@ -91,7 +95,7 @@ STATS
 
     def reload_handlers
       Process.kill 'USR2', master_pid
-      "Sent HUP to #{master_pid}"
+      "Sent USR2 to #{master_pid}"
     end
 
     def halt
