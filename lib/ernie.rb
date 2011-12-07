@@ -233,5 +233,5 @@ def loglevel(level)
 end
 
 at_exit do
-  Ernie.start if Ernie.auto_start
+  Ernie.start if Ernie.auto_start && !defined?(Ernicorn)
 end
