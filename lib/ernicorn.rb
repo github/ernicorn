@@ -23,7 +23,19 @@ module Ernicorn
 
     def worker_loop(worker)
       Stats.incr_workers_idle
+
       super
+
+      if worker.nr == (self.worker_processes - 1)
+        old_pid = "#{self.pid}.oldbin"
+        if File.exists?(old_pid) && self.pid != old_pid
+          begin
+            Process.kill("QUIT", File.read(old_pid).to_i)
+          rescue Errno::ENOENT, Errno::ESRCH
+            # someone else did our job for us
+          end
+        end
+      end
     ensure
       Stats.decr_workers_idle
     end
@@ -78,7 +90,7 @@ STATS
     end
 
     def reload_handlers
-      Process.kill 'HUP', master_pid
+      Process.kill 'USR2', master_pid
       "Sent HUP to #{master_pid}"
     end
 
