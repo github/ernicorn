@@ -194,6 +194,7 @@ class Ernie
       write_berp(output, oruby)
     end
 
+    self.procline('waiting')
     [iruby, oruby]
   end
 
