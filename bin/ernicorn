@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'ernicorn'
+
+Ernie.auto_start = false
+
+host = '0.0.0.0'
+port = 8000
+daemonize = false
+
+options = {}
+parser = OptionParser.new do |opts|
+  opts.banner = <<HELP
+Ernicorn is an Ruby BERT-RPC Server based on Unicorn."
+
+Basic Command Line Usage:
+  ernie [options]+ <handler>
+
+HELP
+  opts.version = Ernie::VERSION
+
+  opts.on("-c CONFIG", "--config CONFIG", "Unicorn style config file") do |x|
+    options[:config_file] = x
+  end
+
+  opts.on("-p PORT", "--port PORT", "Port") do |x|
+    port = x.to_i
+  end
+
+  opts.on("-l LOGLEVEL", "--log-level LOGLEVEL", "Log level (0-4)") do |x|
+    Ernie.loglevel(x)
+  end
+
+  opts.on("-d", "--detached", "Run as a daemon") do
+    daemonize = true
+  end
+
+  opts.on("-P", "--pidfile PIDFILE", "Location to write pid file.") do |x|
+    options[:pid] = x
+  end
+end
+
+parser.parse!
+if ARGV.length != 1
+  puts parser.help
+  exit 1
+end
+
+options[:listeners] = ["#{host}:#{port}"]
+handler = ARGV[0]
+
+if daemonize
+  require 'unicorn/launcher'
+  Unicorn::Launcher.daemonize!(options)
+end
+
+$ernicorn = Ernicorn::Server.new(handler, options)
+$ernicorn.start.join

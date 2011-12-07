@@ -4,7 +4,7 @@ Gem::Specification.new do |s|
   s.rubygems_version = '1.3.6'
 
   s.name              = 'ernie'
-  s.version           = '2.5.2'
+  s.version           = '2.5.5'
   s.date              = '2010-11-23'
   s.rubyforge_project = 'ernie'
 
@@ -19,7 +19,7 @@ Gem::Specification.new do |s|
 
   s.extensions = ["ext/extconf.rb"]
 
-  s.executables = ["ernie"]
+  s.executables = ["ernie", "ernicorn"]
   s.default_executable = 'ernie'
 
   s.rdoc_options = ["--charset=UTF-8"]
@@ -27,6 +27,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency('bert', [">= 1.1.0"])
   s.add_dependency('bertrpc', [">= 1.0.0"])
+  s.add_dependency('unicorn', ["~> 4.1.1"])
 
   s.add_development_dependency('shoulda', [">= 2.11.3", "< 3.0.0"])
 
@@ -37,6 +38,7 @@ Gem::Specification.new do |s|
     README.md
     Rakefile
     bin/ernie
+    bin/ernicorn
     contrib/ebench.erl
     ebin/ernie_server_app.app
     elib/asset_pool.erl
@@ -63,6 +65,7 @@ Gem::Specification.new do |s|
     ext/Makefile
     ext/extconf.rb
     lib/ernie.rb
+    lib/ernicorn.rb
     test/helper.rb
     test/load.rb
     test/sample/ext.rb
