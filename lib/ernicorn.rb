@@ -47,11 +47,19 @@ module Ernicorn
       @client = client
       iruby, oruby = Ernie.process(self, self)
     rescue EOFError
-      # bad client or tcp health check. ignore.
-    rescue => e
+      # bad client or tcp health check from haproxy.
       logger.error(e)
+    rescue Object => e
+      logger.error(e)
+
+      begin
+        error = r[:error, t[:server, 0, e.class.to_s, e.message, e.backtrace]]
+        Ernie.write_berp(self, error)
+      rescue Object => ex
+        logger.error(ex)
+      end
     ensure
-      @client.close
+      @client.close rescue nil
       @client = nil
 
       Stats.incr_connections_completed
