@@ -53,7 +53,7 @@ module Ernicorn
       logger.error(e)
 
       begin
-        error = r[:error, t[:server, 0, e.class.to_s, e.message, e.backtrace]]
+        error = t[:error, t[:server, 0, e.class.to_s, e.message, e.backtrace]]
         Ernie.write_berp(self, error)
       rescue Object => ex
         logger.error(ex)
