@@ -46,7 +46,7 @@ module Ernicorn
 
       @client = client
       iruby, oruby = Ernie.process(self, self)
-    rescue EOFError
+    rescue EOFError => e
       # bad client or tcp health check from haproxy.
       logger.error(e)
     rescue Object => e
