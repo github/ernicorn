@@ -45,11 +45,11 @@ module Ernicorn
       Stats.incr_connections_total
 
       @client = client
-      return if @client.kgio_trypeek(1).nil? # eof
+      # bail out if client only sent EOF
+      return if @client.kgio_trypeek(1).nil?
 
       iruby, oruby = Ernie.process(self, self)
     rescue EOFError
-      # bad client or tcp health check from haproxy.
       logger.error("EOF from #{@client.kgio_addr rescue nil}")
     rescue Object => e
       logger.error(e)
