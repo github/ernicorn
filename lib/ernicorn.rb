@@ -91,7 +91,7 @@ module Ernicorn
       Raindrops::Linux.tcp_listener_stats(Unicorn.listener_names).each do |addr,stats|
         queued += stats.queued
         active += stats.active
-      end if defined?(Raindrops::Linux)
+      end if defined?(Raindrops::Linux.tcp_listener_stats)
 
       return <<STATS
 connections.total=#{Stats.connections_total}
