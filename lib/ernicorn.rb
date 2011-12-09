@@ -73,8 +73,8 @@ module Ernicorn
 
     def read(len)
       data = ''
-      while @client.kgio_read!(len - data.bytesize, data) == :wait_readable
-        IO.select([@client])
+      while data.bytesize < len
+        data << @client.kgio_read!(len - data.bytesize)
       end
       data
     end
