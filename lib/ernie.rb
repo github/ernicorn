@@ -53,6 +53,9 @@ class Ernie
         fun(meth.to_sym, context.method(meth))
       end
     })
+    if defined? mixin.dispatched
+      self.current_mod.logger = mixin.method(:dispatched)
+    end
     context
   end
 
@@ -81,7 +84,18 @@ class Ernie
   def self.dispatch(mod, fun, args)
     self.mods[mod] || raise(ServerError.new("No such module '#{mod}'"))
     self.mods[mod].funs[fun] || raise(ServerError.new("No such function '#{mod}:#{fun}'"))
-    self.mods[mod].funs[fun].call(*args)
+
+    start = Time.now
+    ret = self.mods[mod].funs[fun].call(*args)
+
+    begin
+      self.mods[mod].logger and
+      self.mods[mod].logger.call(Time.now-start, [fun, *args], ret)
+    rescue Object => e
+      self.log.fatal(e)
+    end
+
+    ret
   end
 
   # Read the length header from the wire.
@@ -210,11 +224,12 @@ end
 class Ernie::ServerError < StandardError; end
 
 class Ernie::Mod
-  attr_accessor :name, :funs
+  attr_accessor :name, :funs, :logger
 
   def initialize(name)
     self.name = name
     self.funs = {}
+    self.logger = nil
   end
 
   def fun(name, block)
