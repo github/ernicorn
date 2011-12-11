@@ -193,13 +193,14 @@ class Ernie
       mod, fun, args = iruby[1..3]
       self.procline("#{mod}:#{fun}(#{args})")
       self.log.info("-> " + [:cast, mod, fun, args].inspect) if self.log.level <= Logger::INFO
+      oruby = t[:noreply]
+      write_berp(output, oruby)
+
       begin
         self.dispatch(mod, fun, args)
       rescue Object => e
         # ignore
       end
-      oruby = t[:noreply]
-      write_berp(output, oruby)
     else
       self.procline("invalid request")
       self.log.error("-> " + iruby.inspect) if self.log.level <= Logger::ERROR
