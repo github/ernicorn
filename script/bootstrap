@@ -1,0 +1,11 @@
+#!/bin/sh
+# Usage: script/bootstrap [--local]
+# Prepare the local gem environment.
+set -e
+
+cd "$(dirname "$0")/.."
+if bundle check 1>/dev/null 2>&1; then
+    echo "Gem environment up-to-date"
+else
+    exec bundle install --binstubs --path vendor/gems "$@"
+fi
