@@ -4,4 +4,4 @@ cd "$(dirname "$0")/.."
 
 # run entire test suite
 ruby --version 1>&2
-bundle exec ruby -e "ARGV.each { |f| require(f) }" -- $(find test -name 'test_*.rb')
+bundle exec ruby -I "$(pwd)" -e "ARGV.each { |f| require(f) }" -- $(find test -name 'test_*.rb')
