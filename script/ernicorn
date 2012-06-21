@@ -14,7 +14,7 @@ daemonize = false
 options = {}
 parser = OptionParser.new do |opts|
   opts.banner = <<HELP
-Ernicorn is an Ruby BERT-RPC Server based on Unicorn."
+Ernicorn is an Ruby BERT-RPC Server based on Unicorn.
 
 Basic Command Line Usage:
   ernicorn [options]+ <handler>
