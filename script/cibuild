@@ -14,10 +14,10 @@ echo
 
 echo "Building under 1.8.7"
 bootstrap
-rake
+testsuite
 echo
 
 echo "Building under 1.9.3"
 export RBENV_VERSION="${1:-1.9.3-p0}"
 bootstrap
-rake
+testsuite
