@@ -2,6 +2,8 @@
 
 require 'optparse'
 require 'ernicorn'
+require 'ernicorn/server'
+require 'ernicorn/adminrpc'
 
 Ernie.auto_start = false
 

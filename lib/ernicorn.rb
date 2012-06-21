@@ -1,122 +1,252 @@
-require 'ernie'
-require 'unicorn'
+require 'bert'
+require 'logger'
 
 module Ernicorn
-  Stats = Raindrops::Struct.new(:connections_total,
-                                :connections_completed,
-                                :workers_idle).new
+  VERSION = '1.0.0'
 
-  class Server < Unicorn::HttpServer
+  class << self
+    attr_accessor :mods, :current_mod, :log
+    attr_accessor :auto_start
+    attr_accessor :count, :virgin_procline
+  end
 
-    # Private HttpServer methods we're overriding to
-    # implement BertRPC instead of HTTP.
+  self.count = 0
+  self.virgin_procline = $0
+  self.mods = {}
+  self.current_mod = nil
+  self.log = Logger.new(STDOUT)
+  self.log.level = Logger::FATAL
+  self.auto_start = true
 
-    def initialize(handler, options={})
-      @handler = handler
-      super nil, options
-    end
+  # Record a module.
+  #   +name+ is the module Symbol
+  #   +block+ is the Block containing function definitions
+  #
+  # Returns nothing
+  def self.mod(name, block)
+    m = Mod.new(name)
+    self.current_mod = m
+    self.mods[name] = m
+    block.call
+  end
 
-    def build_app!
-      logger.info "Loading ernie handler: #{@handler}"
-      require @handler
-    end
+  # Record a function.
+  #   +name+ is the function Symbol
+  #   +block+ is the Block to associate
+  #
+  # Returns nothing
+  def self.fun(name, block)
+    self.current_mod.fun(name, block)
+  end
 
-    def worker_loop(worker)
-      Stats.incr_workers_idle
-
-      if worker.nr == (self.worker_processes - 1)
-        old_pid = "#{self.pid}.oldbin"
-        if File.exists?(old_pid) && self.pid != old_pid
-          begin
-            Process.kill("QUIT", File.read(old_pid).to_i)
-          rescue Errno::ENOENT, Errno::ESRCH
-            # someone else did our job for us
-          end
-        end
+  # Expose all public methods in a Ruby module:
+  #   +name+ is the ernie module Symbol
+  #   +mixin+ is the ruby module whose public methods are exposed
+  #
+  # Returns nothing
+  def self.expose(name, mixin)
+    context = Object.new
+    context.extend mixin
+    mod(name, lambda {
+      mixin.public_instance_methods.each do |meth|
+        fun(meth.to_sym, context.method(meth))
       end
-
-      super
-    ensure
-      Stats.decr_workers_idle
+    })
+    if defined? mixin.dispatched
+      self.current_mod.logger = mixin.method(:dispatched)
     end
+    context
+  end
 
-    def process_client(client)
-      Stats.decr_workers_idle
-      Stats.incr_connections_total
+  # Set the logfile to given path.
+  #   +file+ is the String path to the logfile
+  #
+  # Returns nothing
+  def self.logfile(file)
+    self.log = Logger.new(file)
+  end
 
-      @client = client
-      # bail out if client only sent EOF
-      return if @client.kgio_trypeek(1).nil?
+  # Set the log level.
+  #   +level+ is the Logger level (Logger::WARN, etc)
+  #
+  # Returns nothing
+  def self.loglevel(level)
+    self.log.level = level
+  end
 
-      iruby, oruby = Ernie.process(self, self)
-    rescue EOFError
-      logger.error("EOF from #{@client.kgio_addr rescue nil}")
+  # Dispatch the request to the proper mod:fun.
+  #   +mod+ is the module Symbol
+  #   +fun+ is the function Symbol
+  #   +args+ is the Array of arguments
+  #
+  # Returns the Ruby object response
+  def self.dispatch(mod, fun, args)
+    self.mods[mod] || raise(ServerError.new("No such module '#{mod}'"))
+    self.mods[mod].funs[fun] || raise(ServerError.new("No such function '#{mod}:#{fun}'"))
+
+    start = Time.now
+    ret = self.mods[mod].funs[fun].call(*args)
+
+    begin
+      self.mods[mod].logger and
+      self.mods[mod].logger.call(Time.now-start, [fun, *args], ret)
     rescue Object => e
-      logger.error(e)
-
-      begin
-        error = t[:error, t[:server, 0, e.class.to_s, e.message, e.backtrace]]
-        Ernie.write_berp(self, error)
-      rescue Object => ex
-        logger.error(ex)
-      end
-    ensure
-      @client.close rescue nil
-      @client = nil
-
-      Stats.incr_connections_completed
-      Stats.incr_workers_idle
+      self.log.fatal(e)
     end
 
-    # We pass ourselves as both input and output to Ernie.process, which
-    # calls the following blocking read/write methods.
+    ret
+  end
 
-    def read(len)
-      data = ''
-      while data.bytesize < len
-        data << @client.kgio_read!(len - data.bytesize)
-      end
-      data
-    end
+  # Read the length header from the wire.
+  #   +input+ is the IO from which to read
+  #
+  # Returns the size Integer if one was read
+  # Returns nil otherwise
+  def self.read_4(input)
+    raw = input.read(4)
+    return nil unless raw
+    raw.unpack('N').first
+  end
 
-    def write(data)
-      @client.kgio_write(data)
+  # Read a BERP from the wire and decode it to a Ruby object.
+  #   +input+ is the IO from which to read
+  #
+  # Returns a Ruby object if one could be read
+  # Returns nil otherwise
+  def self.read_berp(input)
+    packet_size = self.read_4(input)
+    return nil unless packet_size
+    bert = input.read(packet_size)
+    BERT.decode(bert)
+  end
+
+  # Write the given Ruby object to the wire as a BERP.
+  #   +output+ is the IO on which to write
+  #   +ruby+ is the Ruby object to encode
+  #
+  # Returns nothing
+  def self.write_berp(output, ruby)
+    data = BERT.encode(ruby)
+    output.write([data.length].pack("N"))
+    output.write(data)
+  end
+
+  # Start the processing loop.
+  #
+  # Loops forever
+  def self.start
+    self.procline('starting')
+    self.log.info("(#{Process.pid}) Starting") if self.log.level <= Logger::INFO
+    self.log.debug(self.mods.inspect) if self.log.level <= Logger::DEBUG
+
+    input = IO.new(3)
+    output = IO.new(4)
+    input.sync = true
+    output.sync = true
+
+    loop do
+      process(input, output)
     end
   end
 
-  module AdminRPC
-    def stats
-      queued = active = 0
+  # Processes a single BertRPC command.
+  #
+  #   input  - The IO to #read command BERP from.
+  #   output - The IO to #write reply BERP to.
+  #
+  # Returns a [iruby, oruby] tuple of incoming and outgoing BERPs processed.
+  def self.process(input, output)
+    self.procline('waiting')
+    iruby = self.read_berp(input)
+    self.count += 1
 
-      Raindrops::Linux.tcp_listener_stats(Unicorn.listener_names).each do |addr,stats|
-        queued += stats.queued
-        active += stats.active
-      end if defined?(Raindrops::Linux.tcp_listener_stats)
-
-      return <<STATS
-connections.total=#{Stats.connections_total}
-connections.completed=#{Stats.connections_completed}
-workers.idle=#{Stats.workers_idle}
-workers.busy=#{active}
-queue.high=#{queued}
-queue.low=0
-STATS
+    unless iruby
+      puts "Could not read BERP length header. Ernicorn server may have gone away. Exiting now."
+      if self.log.level <= Logger::INFO
+        self.log.info("(#{Process.pid}) Could not read BERP length header. Ernicorn server may have gone away. Exiting now.")
+      end
+      exit!
     end
 
-    def reload_handlers
-      Process.kill 'USR2', master_pid
-      "Sent USR2 to #{master_pid}"
+    if iruby.size == 4 && iruby[0] == :call
+      mod, fun, args = iruby[1..3]
+      self.procline("#{mod}:#{fun}(#{args})")
+      self.log.info("-> " + iruby.inspect) if self.log.level <= Logger::INFO
+      begin
+        res = self.dispatch(mod, fun, args)
+        oruby = t[:reply, res]
+        self.log.debug("<- " + oruby.inspect) if self.log.level <= Logger::DEBUG
+        write_berp(output, oruby)
+      rescue ServerError => e
+        oruby = t[:error, t[:server, 0, e.class.to_s, e.message, e.backtrace]]
+        self.log.error("<- " + oruby.inspect) if self.log.level <= Logger::ERROR
+        self.log.error(e.backtrace.join("\n")) if self.log.level <= Logger::ERROR
+        write_berp(output, oruby)
+      rescue Object => e
+        oruby = t[:error, t[:user, 0, e.class.to_s, e.message, e.backtrace]]
+        self.log.error("<- " + oruby.inspect) if self.log.level <= Logger::ERROR
+        self.log.error(e.backtrace.join("\n")) if self.log.level <= Logger::ERROR
+        write_berp(output, oruby)
+      end
+    elsif iruby.size == 4 && iruby[0] == :cast
+      mod, fun, args = iruby[1..3]
+      self.procline("#{mod}:#{fun}(#{args})")
+      self.log.info("-> " + [:cast, mod, fun, args].inspect) if self.log.level <= Logger::INFO
+      oruby = t[:noreply]
+      write_berp(output, oruby)
+
+      begin
+        self.dispatch(mod, fun, args)
+      rescue Object => e
+        # ignore
+      end
+    else
+      self.procline("invalid request")
+      self.log.error("-> " + iruby.inspect) if self.log.level <= Logger::ERROR
+      oruby = t[:error, t[:server, 0, "Invalid request: #{iruby.inspect}"]]
+      self.log.error("<- " + oruby.inspect) if self.log.level <= Logger::ERROR
+      write_berp(output, oruby)
     end
 
-    def halt
-      Process.kill 'QUIT', master_pid
-      "Sent QUIT to #{master_pid}"
+    self.procline('waiting')
+    [iruby, oruby]
+  end
+
+  def self.procline(msg)
+    $0 = "ernicorn handler #{VERSION} (ruby) - #{self.virgin_procline} - [#{self.count}] #{msg}"[0..159]
+  end
+
+  def self.version
+    VERSION
+  end
+
+  class ServerError < StandardError; end
+
+  class Ernicorn::Mod
+    attr_accessor :name, :funs, :logger
+
+    def initialize(name)
+      self.name = name
+      self.funs = {}
+      self.logger = nil
     end
 
-    def master_pid
-      $ernicorn.master_pid
+    def fun(name, block)
+      raise TypeError, "block required" if block.nil?
+      self.funs[name] = block
     end
   end
 end
+# Root level calls
 
-Ernie.expose(:__admin__, Ernicorn::AdminRPC)
+def logfile(name)
+  Ernicorn.logfile(name)
+end
+
+def loglevel(level)
+  Ernicorn.loglevel(level)
+end
+
+at_exit do
+  Ernicorn.start if Ernicorn.auto_start && !defined?(Ernicorn)
+end
