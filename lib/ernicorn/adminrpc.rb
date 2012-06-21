@@ -36,4 +36,4 @@ STATS
   end
 end
 
-Ernie.expose(:__admin__, Ernicorn::AdminRPC)
+Ernicorn.expose(:__admin__, Ernicorn::AdminRPC)

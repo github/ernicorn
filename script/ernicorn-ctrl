@@ -7,18 +7,16 @@
 #/   reload-handlers         Gracefully reload all handler processes.
 #/   stats                   Dump handler stats for the server.
 #/   halt                    Shut down.
-
 require 'optparse'
 require 'bertrpc'
 
 port = 8000
 
 def usage(status=0)
-  exec "grep ^#/<'#{file}'|cut -c4-; exit #{status}"
+  exec "grep ^#/<'#{__FILE__}'|cut -c4-; exit #{status}"
 end
 
 # parse arguments
-file = __FILE__
 ARGV.options do |opts|
   opts.on("-p", "--port=val", Integer) { |port| }
   opts.on_tail("-h", "--help")         { usage }
@@ -36,4 +34,4 @@ end
 # connect to the adminrpc handler and send the command
 require 'bertrpc'
 service = BERTRPC::Service.new('localhost', port)
-puts svc.call.__admin__.send(command.gsub(/-/, '_'))
+puts service.call.__admin__.send(command.gsub(/-/, '_'))
