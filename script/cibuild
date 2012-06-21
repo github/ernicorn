@@ -1,0 +1,23 @@
+#!/bin/sh
+# Usage: script/cibuild
+# CI build script.
+# This is tailored for the janky build machines.
+set -e
+
+# change into root dir and setup path
+cd $(dirname "$0")/..
+PATH="$(pwd)/bin:$(pwd)/script:/usr/share/rbenv/shims:$PATH"
+
+# Write commit we're building at
+git log -n 1 || true
+echo
+
+echo "Building under 1.8.7"
+bootstrap
+rake
+echo
+
+echo "Building under 1.9.3"
+export RBENV_VERSION="${1:-1.9.3-p0}"
+bootstrap
+rake
