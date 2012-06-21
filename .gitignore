@@ -1,2 +1,3 @@
-*.beam
-pkg
+/.bundle
+/bin
+/vendor
