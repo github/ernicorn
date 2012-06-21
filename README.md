@@ -3,7 +3,7 @@ Ernicorn
 
 A BERT-RPC server based on [Ernie](https://github.com/mojombo/ernie)'s Ruby
 interface but that uses [Unicorn](http://unicorn.bogomips.org/) for worker
-process management. Ernicorn does not
+process management.
 
 Ernicorn supports BERT-RPC `call` and `cast` requests. See the full BERT-RPC
 specification at [bert-rpc.org](http://bert-rpc.org) for more information.
