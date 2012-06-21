@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+#/ Usage: ernicorn-ctrl [-p <port>] <command>
+#/ Issue a control command to an ernicorn server. The port option is used to
+#/ specify a non-default control port.
+#/
+#/ Commands:
+#/   reload-handlers         Gracefully reload all handler processes.
+#/   stats                   Dump handler stats for the server.
+#/   halt                    Shut down.
+
+require 'optparse'
+require 'bertrpc'
+
+port = 8000
+
+def usage(status=0)
+  exec "grep ^#/<'#{file}'|cut -c4-; exit #{status}"
+end
+
+# parse arguments
+file = __FILE__
+ARGV.options do |opts|
+  opts.on("-p", "--port=val", Integer) { |port| }
+  opts.on_tail("-h", "--help")         { usage }
+  opts.parse!
+end
+
+# the control command
+command = ARGV[0]
+
+# bail out with usage if the command wasn't specified or is invalid
+if !%w[reload-handlers stats halt].include?(command)
+  usage(1)
+end
+
+# connect to the adminrpc handler and send the command
+require 'bertrpc'
+service = BERTRPC::Service.new('localhost', port)
+puts svc.call.__admin__.send(command.gsub(/-/, '_'))

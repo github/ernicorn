@@ -28,6 +28,6 @@ Gem::Specification.new do |s|
   s.test_files    = `git ls-files -- test`.split("\n").select { |f| f =~ /_test.rb$/ }
 
   s.bindir        = "script"
-  s.executables   = %w[ernicorn]
+  s.executables   = %w[ernicorn ernicorn-ctrl]
   s.require_paths = %w[lib]
 end
