@@ -4,41 +4,58 @@
 #/
 #/ Options
 #/   -h, --host=<host>          Server address to listen on; default: 0.0.0.0
-#/   -p, --port=<portno>        Server port to listen on; default: 8000
+#/   -p, --port=<portno>        Server port to listen on; default: 8149
+#/   -l, --listen=<host>:<port> Listen addresses. Can be specified multiple times
 #/       --log-level=0-4        Set the log level
 #/   -d, --detached             Run as a daemon
 #/   -P, --pidfile=<file>       Location to write pid file
 #/
 #/ See https://github.com/github/ernicorn for more information.
 require 'optparse'
+
+# override unicorn's default port and listen address list
+module Unicorn
+  require 'unicorn/const'
+  module Unicorn::Const
+    remove_const :DEFAULT_PORT
+    remove_const :DEFAULT_LISTEN
+    DEFAULT_PORT = 8149
+    DEFAULT_LISTEN = "#{DEFAULT_HOST}:#{DEFAULT_PORT}"
+  end
+end
+
+# load unicorn server extensions
 require 'ernicorn'
 require 'ernicorn/server'
 require 'ernicorn/adminrpc'
 
-Ernicorn.auto_start = false
-
-host = '0.0.0.0'
-port = 8000
+# command line options
+host = nil
+port = nil
+listeners = []
 daemonize = false
 config = 'config/ernicorn.rb'
 pidfile = nil
 
 parser = OptionParser.new do |opts|
-  opts.on("-c", "--config=val", String)     { |config| }
-  opts.on("-h", "--host=val", Integer)      { |host| }
-  opts.on("-p", "--port=val", Integer)      { |port| }
-  opts.on(      "--log-level=val", Integer) { |val| Ernicorn.loglevel(val) }
-  opts.on("-d", "--detached")               { |daemonize| }
-  opts.on("-P", "--pidfile=val")            { |pidfile| }
-  opts.on_tail("-h", "--help")              { exec "grep ^#/<'#{__FILE__}'|cut -c4-" }
+  opts.on("-c", "--config=val", String)      { |config| }
+  opts.on("-h", "--host=val", String)        { |host| }
+  opts.on("-p", "--port=val", Integer)       { |port| }
+  opts.on("-l", "--listen=val", String)      { |addr| listeners << addr }
+  opts.on(      "--log-level=val", Integer)  { |val| Ernicorn.loglevel(val) }
+  opts.on("-d", "--detached")                { |daemonize| }
+  opts.on("-P", "--pidfile=val")             { |pidfile| }
+  opts.on_tail("-h", "--help")               { exec "grep ^#/<'#{__FILE__}'|cut -c4-" }
   opts.parse!
 end
+
+listeners << "#{host || '0.0.0.0'}:#{port || 8149}" if host || port
 
 config = ARGV[0] || config
 
 options = {
   :pid         => pidfile,
-  :listeners   => ["#{host}:#{port}"],
+  :listeners   => listeners,
   :config_file => File.expand_path(config)
 }
 
