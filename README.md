@@ -19,25 +19,32 @@ Installation
 Starting The Server
 -------------------
 
-Use the ernicorn command to start a new RPC server:
+Use the `ernicorn` command to start a new RPC server:
 
-    [rtomayko@iron:ernicorn]$ ernicorn --help
-    Ernicorn is an Ruby BERT-RPC Server based on Unicorn.
+    $ ernicorn --help
+    Usage: ernicorn [options] [config file]
+    Start a Ruby BERT-RPC Server with the given options and config file.
 
-    Basic Command Line Usage:
-      ernicorn [options] <handler>
+    Options
+      -h, --host=<host>          Server address to listen on; default: 0.0.0.0
+      -p, --port=<portno>        Server port to listen on; default: 8149
+      -l, --listen=<host>:<port> Listen addresses. Can be specified multiple times
+          --log-level=0-4        Set the log level
+      -d, --detached             Run as a daemon
+      -P, --pidfile=<file>       Location to write pid file
 
-        -c, --config CONFIG              Unicorn style config file
-        -p, --port PORT                  Port
-        -l, --log-level LOGLEVEL         Log level (0-4)
-        -d, --detached                   Run as a daemon
-        -P, --pidfile PIDFILE            Location to write pid file.
+The ernicorn server attempts to load the config file given or
+`config/ernicorn.rb` when no config file is specified. See the example config
+file [examples/config.rb][c] to get started. All [Unicorn config options][r] are
+supported.
 
-The handler must be given and should be a normal Ruby file that sets up the
-environment and calls `Ernicorn.expose` for any server modules. See the
-[examples/handler.rb][h] file for more info.
+The config file should require any libraries needed for the server and register
+server modules with `Ernicorn.expose(:modulename, TheModule)`. See the
+[examples/handler.rb][h] file for a simple example handler.
 
 [h]: https://github.com/github/ernicorn/blob/master/examples/handler.rb
+[c]: https://github.com/github/ernicorn/blob/master/examples/config.rb
+[r]: http://unicorn.bogomips.org/Unicorn/Configurator.html
 
 Control Commands
 ----------------
