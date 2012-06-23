@@ -1,0 +1,130 @@
+#!/usr/bin/env ruby
+
+$:.unshift(File.join(File.dirname(__FILE__), *%w[.. lib]))
+ERNIE_ROOT = File.join(File.dirname(__FILE__), *%w[..])
+
+DEFAULT_ERLANG_CODEPATHS = %w[ebin]
+DEFAULT_PORT = 8000
+
+def rel(path)
+  File.join(ERNIE_ROOT, path)
+end
+
+def code_paths
+  DEFAULT_ERLANG_CODEPATHS.map {|n| "-pz #{rel(n)}" }.join(" ") + " \\"
+end
+
+require 'optparse'
+require 'pp'
+require 'yaml'
+require 'ernie'
+
+Ernie.auto_start = false
+
+help = <<HELP
+Ernie is an Erlang/Ruby BERT-RPC Server.
+
+Basic Command Line Usage:
+  ernie [command] [options]
+
+Commands:
+  <none>                Start an Ernie server.
+  reload-handlers       Gracefully reload all of the the ruby handlers
+                        and use the new code for all subsequent requests.
+  stats                 Print usage statistics.
+  halt                  Gracefully halt the server.
+
+Options:
+HELP
+
+options = {}
+OptionParser.new do |opts|
+  opts.banner = help
+  opts.version = Ernie::VERSION
+
+  opts.on("-c CONFIG", "--config CONFIG", "Config file") do |x|
+    options[:config] = x
+  end
+
+  opts.on("-p PORT", "--port PORT", "Port") do |x|
+    options[:port] = x
+  end
+
+  opts.on("-l LOGLEVEL", "--log-level LOGLEVEL", "Log level (0-4)") do |x|
+    options[:log_level] = x
+  end
+
+  opts.on("-a LOGFILE", "--access-log LOGFILE", "Access log file") do |x|
+    options[:access_log] = x
+  end
+
+  opts.on("-d", "--detached", "Run as a daemon") do
+    options[:detached] = true
+  end
+
+  opts.on("--name NAME", "Erlang proccess name") do |x|
+    options[:name] = x
+  end
+
+  opts.on("--sname NAME", "Erlang short proccess name") do |x|
+    options[:sname] = x
+  end
+
+  opts.on("-P", "--pidfile PIDFILE", "Location to write pid file.") do |x|
+    options[:pidfile] = x
+  end
+
+  opts.on("-E", "--erlang ERLANG_OPTIONS", "Additional parameters to Erlang VM") do |x|
+    options[:erl_options] = x
+  end
+end.parse!
+
+if command = ARGV[0]
+  if !%w{reload-handlers stats halt}.include?(command)
+    puts "Invlalid command. Valid commands are:"
+    puts "  reload-handlers"
+    puts "  stats"
+    puts "  halt"
+    exit(1)
+  end
+
+  require 'rubygems'
+  require 'bertrpc'
+  port = options[:port] || DEFAULT_PORT
+  svc = BERTRPC::Service.new('localhost', port)
+  puts svc.call.__admin__.send(command.gsub(/-/, '_'))
+else
+  if !options[:config]
+    puts "A config file must be specified: ernie -c /path/to/config.yml"
+    exit(1)
+  end
+
+  config = options[:config]
+  port = options[:port] || DEFAULT_PORT
+  log_level = options[:log_level] || 2
+  pidfile = options[:pidfile] ? "-ernie_server_app pidfile \"'#{options[:pidfile]}'\"" : ''
+  detached = options[:detached] ? '-detached' : ''
+  access_log = options[:access_log] ? "-ernie_server_app access_log '\"#{options[:access_log]}\"'" : ''
+  name = options[:name] ? "-name #{options[:name]}" : ''
+  sname = options[:sname] ? "-sname #{options[:sname]}" : ''
+  erl_options = options[:erl_options]
+
+  cmd = %Q{erl -boot start_sasl \
+               #{name} \
+               #{sname} \
+               #{detached} \
+               +Bc \
+               +K true \
+               -smp enable \
+               #{code_paths}
+               #{pidfile} \
+               #{access_log} \
+               -ernie_server_app port #{port} \
+               -ernie_server_app config '"#{config}"' \
+               -ernie_server_app log_level #{log_level} \
+               -run ernie_server_app boot \
+               #{erl_options}}.squeeze(' ')  
+  puts cmd
+  STDOUT.flush
+  exec(cmd)
+end
