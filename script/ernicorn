@@ -1,5 +1,15 @@
 #!/usr/bin/env ruby
-
+#/ Usage: ernicorn [options] [config file]
+#/ Start a Ruby BERT-RPC Server with the given options and config file.
+#/
+#/ Options
+#/   -c, --config=<file>        Unicorn style config file
+#/   -p, --port=<portno>        Server port to listen on
+#/   -l, --loglevel=0-4         Set the log level
+#/   -d, --detached             Run as a daemon
+#/   -P, --pidfile=<file>       Location to write pid file
+#/
+#/ See https://github.com/github/ernicorn for more information.
 require 'optparse'
 require 'ernicorn'
 require 'ernicorn/server'
@@ -10,47 +20,27 @@ Ernicorn.auto_start = false
 host = '0.0.0.0'
 port = 8000
 daemonize = false
+config = 'config/ernicorn.rb'
+pidfile = nil
 
-options = {}
 parser = OptionParser.new do |opts|
-  opts.banner = <<HELP
-Ernicorn is an Ruby BERT-RPC Server based on Unicorn.
-
-Basic Command Line Usage:
-  ernicorn [options]+ <handler>
-
-HELP
-  opts.version = Ernicorn::VERSION
-
-  opts.on("-c CONFIG", "--config CONFIG", "Unicorn style config file") do |x|
-    options[:config_file] = x
-  end
-
-  opts.on("-p PORT", "--port PORT", "Port") do |x|
-    port = x.to_i
-  end
-
-  opts.on("-l LOGLEVEL", "--log-level LOGLEVEL", "Log level (0-4)") do |x|
-    Ernicorn.loglevel(x)
-  end
-
-  opts.on("-d", "--detached", "Run as a daemon") do
-    daemonize = true
-  end
-
-  opts.on("-P", "--pidfile PIDFILE", "Location to write pid file.") do |x|
-    options[:pid] = x
-  end
+  opts.on("-c", "--config=val", String)     { |config| }
+  opts.on("-p", "--port=val", Integer)      { |port| }
+  opts.on("-l", "--log-level=val", Integer) { |val| Ernicorn.loglevel(x) }
+  opts.on("-d", "--detached")               { |daemonize| }
+  opts.on("-P", "--pidfile=val")            { |pidfile| }
+  opts.on_tail("-h", "--help")              { exec "grep ^#/<'#{__FILE__}'|cut -c4-" }
+  opts.parse!
 end
 
-parser.parse!
-if ARGV.length != 1
-  puts parser.help
-  exit 1
-end
+config = ARGV[0] || config
 
-options[:listeners] = ["#{host}:#{port}"]
-handler = ARGV[0]
+options = {
+  :pid         => pidfile,
+  :port        => port,
+  :listeners   => ["#{host}:#{port}"],
+  :config_file => File.expand_path(config)
+}
 
 if daemonize
   require 'unicorn/launcher'
