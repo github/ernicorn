@@ -156,15 +156,9 @@ module Ernicorn
   def self.process(input, output)
     self.procline('waiting')
     iruby = self.read_berp(input)
-    self.count += 1
+    return nil if iruby.nil?
 
-    unless iruby
-      puts "Could not read BERP length header. Ernicorn server may have gone away. Exiting now."
-      if self.log.level <= Logger::INFO
-        self.log.info("(#{Process.pid}) Could not read BERP length header. Ernicorn server may have gone away. Exiting now.")
-      end
-      exit!
-    end
+    self.count += 1
 
     if iruby.size == 4 && iruby[0] == :call
       mod, fun, args = iruby[1..3]
