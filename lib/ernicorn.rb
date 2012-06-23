@@ -1,9 +1,8 @@
 require 'bert'
 require 'logger'
+require 'ernicorn/version'
 
 module Ernicorn
-  VERSION = '1.0.0'
-
   class << self
     attr_accessor :mods, :current_mod, :log
     attr_accessor :count, :virgin_procline

@@ -1,10 +1,12 @@
+require 'ernicorn/version'
+
 Gem::Specification.new do |s|
   s.specification_version = 2 if s.respond_to? :specification_version=
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.rubygems_version = '1.3.6'
 
   s.name = 'ernicorn'
-  s.version = '1.0.1'
+  s.version = Ernicorn::VERSION
   s.date = '2012-06-23'
 
   s.summary     = "Ernicorn is a BERT-RPC server implementation based on unicorn."
