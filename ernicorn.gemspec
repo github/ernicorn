@@ -1,3 +1,4 @@
+$:.unshift File.expand_path('../lib', __FILE__)
 require 'ernicorn/version'
 
 Gem::Specification.new do |s|
