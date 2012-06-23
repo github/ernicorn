@@ -6,7 +6,6 @@ module Ernicorn
 
   class << self
     attr_accessor :mods, :current_mod, :log
-    attr_accessor :auto_start
     attr_accessor :count, :virgin_procline
   end
 
@@ -16,7 +15,6 @@ module Ernicorn
   self.current_mod = nil
   self.log = Logger.new(STDOUT)
   self.log.level = Logger::FATAL
-  self.auto_start = true
 
   # Record a module.
   #   +name+ is the module Symbol
@@ -245,8 +243,4 @@ end
 
 def loglevel(level)
   Ernicorn.loglevel(level)
-end
-
-at_exit do
-  Ernicorn.start if Ernicorn.auto_start && !defined?(Ernicorn)
 end
