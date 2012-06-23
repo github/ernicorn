@@ -10,14 +10,11 @@ module Ernicorn
     # Private HttpServer methods we're overriding to
     # implement BertRPC instead of HTTP.
 
-    def initialize(handler, options={})
-      @handler = handler
-      super nil, options
+    def initialize(app, options={})
+      super app, options
     end
 
     def build_app!
-      logger.info "Loading ernicorn handler: #{@handler}"
-      require @handler
     end
 
     def worker_loop(worker)

@@ -3,7 +3,6 @@
 #/ Start a Ruby BERT-RPC Server with the given options and config file.
 #/
 #/ Options
-#/   -c, --config=<file>        Unicorn style config file
 #/   -h, --host=<host>          Server address to listen on; default: 0.0.0.0
 #/   -p, --port=<portno>        Server port to listen on; default: 8000
 #/       --log-level=0-4        Set the log level
@@ -48,5 +47,5 @@ if daemonize
   Unicorn::Launcher.daemonize!(options)
 end
 
-$ernicorn = Ernicorn::Server.new(handler, options)
+$ernicorn = Ernicorn::Server.new(nil, options)
 $ernicorn.start.join

@@ -47,6 +47,3 @@ module Example
     raise "abandon hope!"
   end
 end
-
-require 'ernicorn'
-Ernicorn.expose(:example, Example)
