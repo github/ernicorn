@@ -29,10 +29,8 @@ Ernicorn.expose(:example, Example)
 
 # hook into new child immediately after forking
 after_fork  do |server, worker|
-  Ernicorn.log.info "after_fork"
 end
 
 # hook into master immediately before forking a worker
 before_fork do |server, worker|
-  Ernicorn.log.info "before_fork"
 end
