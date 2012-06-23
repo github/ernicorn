@@ -4,7 +4,7 @@ Gem::Specification.new do |s|
   s.rubygems_version = '1.3.6'
 
   s.name = 'ernicorn'
-  s.version = '1.0.0'
+  s.version = '1.0.1'
   s.date = '2012-06-23'
 
   s.summary     = "Ernicorn is a BERT-RPC server implementation based on unicorn."
