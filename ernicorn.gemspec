@@ -5,18 +5,14 @@ Gem::Specification.new do |s|
 
   s.name = 'ernicorn'
   s.version = '1.0.0'
-  s.date = '2012-06-21'
+  s.date = '2012-06-23'
 
   s.summary     = "Ernicorn is a BERT-RPC server implementation based on unicorn."
   s.description = "Ernicorn is a BERT-RPC server packaged as a gem."
 
-  s.authors  = ["Tom Preston-Werner", "tmm1"]
+  s.authors  = ["Tom Preston-Werner", "tmm1", "rtomayko"]
   s.email    = 'tmm1@github.com'
   s.homepage = 'https://github.com/github/ernicorn'
-
-  s.require_paths = %w[lib]
-
-  s.extra_rdoc_files = %w[LICENSE README.md]
 
   s.add_runtime_dependency('bert', ">= 1.1.0")
   s.add_runtime_dependency('bertrpc', ">= 1.0.0")
@@ -30,4 +26,5 @@ Gem::Specification.new do |s|
   s.bindir        = "script"
   s.executables   = %w[ernicorn ernicorn-ctrl]
   s.require_paths = %w[lib]
+  s.extra_rdoc_files = %w[LICENSE README.md]
 end
