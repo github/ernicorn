@@ -4,8 +4,9 @@
 #/
 #/ Options
 #/   -c, --config=<file>        Unicorn style config file
-#/   -p, --port=<portno>        Server port to listen on
-#/   -l, --loglevel=0-4         Set the log level
+#/   -h, --host=<host>          Server address to listen on; default: 0.0.0.0
+#/   -p, --port=<portno>        Server port to listen on; default: 8000
+#/       --log-level=0-4        Set the log level
 #/   -d, --detached             Run as a daemon
 #/   -P, --pidfile=<file>       Location to write pid file
 #/
@@ -25,8 +26,9 @@ pidfile = nil
 
 parser = OptionParser.new do |opts|
   opts.on("-c", "--config=val", String)     { |config| }
+  opts.on("-h", "--host=val", Integer)      { |host| }
   opts.on("-p", "--port=val", Integer)      { |port| }
-  opts.on("-l", "--log-level=val", Integer) { |val| Ernicorn.loglevel(x) }
+  opts.on(      "--log-level=val", Integer) { |val| Ernicorn.loglevel(val) }
   opts.on("-d", "--detached")               { |daemonize| }
   opts.on("-P", "--pidfile=val")            { |pidfile| }
   opts.on_tail("-h", "--help")              { exec "grep ^#/<'#{__FILE__}'|cut -c4-" }
@@ -37,7 +39,6 @@ config = ARGV[0] || config
 
 options = {
   :pid         => pidfile,
-  :port        => port,
   :listeners   => ["#{host}:#{port}"],
   :config_file => File.expand_path(config)
 }
