@@ -10,7 +10,7 @@
 require 'optparse'
 require 'bertrpc'
 
-port = 8000
+port = 8149
 
 def usage(status=0)
   exec "grep ^#/<'#{__FILE__}'|cut -c4-; exit #{status}"
