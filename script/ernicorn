@@ -38,13 +38,13 @@ config = 'config/ernicorn.rb'
 pidfile = nil
 
 parser = OptionParser.new do |opts|
-  opts.on("-c", "--config=val", String)      { |config| }
-  opts.on("-h", "--host=val", String)        { |host| }
-  opts.on("-p", "--port=val", Integer)       { |port| }
+  opts.on("-c", "--config=val", String)      { |o| config = o }
+  opts.on("-h", "--host=val", String)        { |o| host = o }
+  opts.on("-p", "--port=val", Integer)       { |o| port = o }
   opts.on("-l", "--listen=val", String)      { |addr| listeners << addr }
   opts.on(      "--log-level=val", Integer)  { |val| Ernicorn.loglevel(val) }
-  opts.on("-d", "--detached")                { |daemonize| }
-  opts.on("-P", "--pidfile=val")             { |pidfile| }
+  opts.on("-d", "--detached")                { |o| daemonize = o }
+  opts.on("-P", "--pidfile=val")             { |o| pidfile = o }
   opts.on_tail("-h", "--help")               { exec "grep ^#/<'#{__FILE__}'|cut -c4-" }
   opts.parse!
 end
