@@ -124,7 +124,7 @@ module Ernicorn
   # Returns nothing
   def self.write_berp(output, ruby)
     data = BERT.encode(ruby)
-    output.write([data.length].pack("N"))
+    output.write([data.bytesize].pack("N"))
     output.write(data)
   end
 
