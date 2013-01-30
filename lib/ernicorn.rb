@@ -5,7 +5,7 @@ require 'ernicorn/version'
 module Ernicorn
   class << self
     attr_accessor :mods, :current_mod, :log
-    attr_accessor :count, :virgin_procline
+    attr_accessor :count, :virgin_procline, :serializer
   end
 
   self.count = 0
@@ -14,6 +14,7 @@ module Ernicorn
   self.current_mod = nil
   self.log = Logger.new(STDOUT)
   self.log.level = Logger::FATAL
+  self.serializer = BERT
 
   # Record a module.
   #   +name+ is the module Symbol
@@ -114,7 +115,7 @@ module Ernicorn
     packet_size = self.read_4(input)
     return nil unless packet_size
     bert = input.read(packet_size)
-    BERT.decode(bert)
+    serializer.decode(bert)
   end
 
   # Write the given Ruby object to the wire as a BERP.
@@ -123,7 +124,7 @@ module Ernicorn
   #
   # Returns nothing
   def self.write_berp(output, ruby)
-    data = BERT.encode(ruby)
+    data = serializer.encode(ruby)
     output.write([data.bytesize].pack("N"))
     output.write(data)
   end
