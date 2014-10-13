@@ -18,7 +18,7 @@ end
 
 # parse arguments
 ARGV.options do |opts|
-  opts.on("-p", "--port=val", Integer) { |port| }
+  opts.on("-p", "--port=val", Integer) { |p| port = p }
   opts.on_tail("-h", "--help")         { usage }
   opts.parse!
 end
