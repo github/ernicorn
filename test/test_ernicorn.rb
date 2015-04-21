@@ -44,7 +44,7 @@ class ErnicornTest < Test::Unit::TestCase
   module TestLoggingModule
     def self.logs() @logs ||= [] end
 
-    def self.dispatched(*args)
+    def self.dispatching(*args)
       logs << args
     end
 
