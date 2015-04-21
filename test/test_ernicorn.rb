@@ -63,7 +63,7 @@ class ErnicornTest < Test::Unit::TestCase
       assert_equal 0.1, ret
 
       assert_equal 1, TestLoggingModule.logs.size
-      assert_in_delta 0.1, TestLoggingModule.logs.first[0], 0.05
+      assert_in_delta 0.1, TestLoggingModule.logs.first[0][1], 0.05
     end
   end
 end
