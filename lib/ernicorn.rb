@@ -49,8 +49,8 @@ module Ernicorn
         fun(meth.to_sym, context.method(meth))
       end
     })
-    if defined? mixin.dispatched
-      self.current_mod.logger = mixin.method(:dispatched)
+    if defined? mixin.dispatching
+      self.current_mod.dispatching = mixin.method(:dispatching)
     end
     context
   end
@@ -81,17 +81,14 @@ module Ernicorn
     self.mods[mod] || raise(ServerError.new("No such module '#{mod}'"))
     self.mods[mod].funs[fun] || raise(ServerError.new("No such function '#{mod}:#{fun}'"))
 
-    start = Time.now
-    ret = self.mods[mod].funs[fun].call(*args)
-
     begin
-      self.mods[mod].logger and
-      self.mods[mod].logger.call(Time.now-start, [fun, *args], ret)
+      self.mods[mod].dispatching and
+      self.mods[mod].dispatching.call([fun, *args])
     rescue Object => e
       self.log.fatal(e)
     end
 
-    ret
+    self.mods[mod].funs[fun].call(*args)
   end
 
   # Read the length header from the wire.
@@ -204,7 +201,7 @@ module Ernicorn
   end
 
   def self.procline(msg)
-    $0 = "ernicorn handler #{VERSION} (ruby) - #{self.virgin_procline} - [#{self.count}] #{msg}"[0..159]
+    $0 = "ernicorn handler #{VERSION} - #{self.virgin_procline} - [#{self.count}] #{msg}"[0..180]
   end
 
   def self.version
@@ -214,12 +211,12 @@ module Ernicorn
   class ServerError < StandardError; end
 
   class Ernicorn::Mod
-    attr_accessor :name, :funs, :logger
+    attr_accessor :name, :funs, :dispatching
 
     def initialize(name)
       self.name = name
       self.funs = {}
-      self.logger = nil
+      self.dispatching = nil
     end
 
     def fun(name, block)

@@ -35,7 +35,7 @@ port = nil
 listeners = []
 daemonize = false
 config = 'config/ernicorn.rb'
-pidfile = nil
+pidfile = 'tmp/pids/ernicorn.pid'
 
 parser = OptionParser.new do |opts|
   opts.on("-c", "--config=val", String)      { |o| config = o }

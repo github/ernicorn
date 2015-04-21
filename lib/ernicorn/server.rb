@@ -37,6 +37,12 @@ module Ernicorn
     end
 
     def process_client(client)
+      Ernicorn.respond_to?(:around_filter) ?
+        Ernicorn.around_filter { process_ernicorn_client(client) } :
+        process_ernicorn_client(client)
+    end
+
+    def process_ernicorn_client(client)
       Stats.decr_workers_idle
       Stats.incr_connections_total
 
@@ -77,6 +83,11 @@ module Ernicorn
 
     def write(data)
       @client.kgio_write(data)
+    end
+
+    def stop(graceful = true)
+      self.pid = "#{self.pid}.#{$$}" if pid =~ /\.oldbin\z/
+      super
     end
   end
 end
